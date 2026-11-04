@@ -63,6 +63,7 @@ if app_mode == "1. Review Sentiment Analyzer":
             
         if st.button("Run NLP Analysis 🚀"):
             # NLP Processing (VADER Sentiment)
+            df = df.dropna(subset=[review_col])
             sia = SentimentIntensityAnalyzer()
             
             # Apply logic on the user-selected column
