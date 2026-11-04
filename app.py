@@ -50,69 +50,79 @@ if app_mode == "1. Review Sentiment Analyzer":
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
         st.success("File uploaded successfully!")
-    else:
-        st.info("No file uploaded. Using sample e-commerce data for demonstration.")
-        df = get_dummy_data()
-
-    # Check if correct column exists
-    if "Review_Text" in df.columns:
         
-        # NLP Processing (VADER Sentiment)
-        sia = SentimentIntensityAnalyzer()
+        # --- NEW DYNAMIC MAPPING FEATURE ---
+        st.markdown("### ⚙️ Map Your Data Columns")
+        all_columns = df.columns.tolist()
         
-        # Calculate scores
-        df['Sentiment_Scores'] = df['Review_Text'].apply(lambda x: sia.polarity_scores(str(x)))
-        df['Compound_Score'] = df['Sentiment_Scores'].apply(lambda x: x['compound'])
-        
-        # Categorize Sentiment
-        def get_sentiment_label(score):
-            if score >= 0.05: return "Positive"
-            elif score <= -0.05: return "Negative"
-            else: return "Neutral"
+        col_map1, col_map2 = st.columns(2)
+        with col_map1:
+            review_col = st.selectbox("Select Review Text Column:", all_columns)
+        with col_map2:
+            rating_col = st.selectbox("Select Star Rating Column (Optional):", ["No Rating Column"] + all_columns)
             
-        df['Sentiment_Label'] = df['Compound_Score'].apply(get_sentiment_label)
-
-        # --- DASHBOARD VISUALIZATION ---
-        st.markdown("---")
-        st.markdown("### Executive Summary")
-        
-        # Top Metrics
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Reviews Analyzed", len(df))
-        
-        positive_pct = round((len(df[df['Sentiment_Label'] == 'Positive']) / len(df)) * 100, 1)
-        col2.metric("Positive Sentiment %", f"{positive_pct}%")
-        
-        avg_score = round(df['Compound_Score'].mean(), 2)
-        col3.metric("Average NLP Score", avg_score)
-
-        st.markdown("---")
-        
-        # Charts Section
-        col_chart1, col_chart2 = st.columns(2)
-        
-        with col_chart1:
-            st.markdown("#### Sentiment Distribution")
-            fig_pie = px.pie(
-                df, 
-                names='Sentiment_Label', 
-                color='Sentiment_Label',
-                color_discrete_map={"Positive": "#00CC96", "Negative": "#EF553B", "Neutral": "#636EFA"},
-                hole=0.4
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
+        if st.button("Run NLP Analysis 🚀"):
+            # NLP Processing (VADER Sentiment)
+            sia = SentimentIntensityAnalyzer()
             
-        with col_chart2:
-            st.markdown("#### Detailed NLP Output")
-            # Displaying the clean dataframe
-            st.dataframe(
-                df[['Review_Text', 'Star_Rating', 'Sentiment_Label', 'Compound_Score']],
-                use_container_width=True,
-                height=350
-            )
+            # Apply logic on the user-selected column
+            df['Sentiment_Scores'] = df[review_col].astype(str).apply(lambda x: sia.polarity_scores(x))
+            df['Compound_Score'] = df['Sentiment_Scores'].apply(lambda x: x['compound'])
+            
+            # Categorize Sentiment
+            def get_sentiment_label(score):
+                if score >= 0.05: return "Positive"
+                elif score <= -0.05: return "Negative"
+                else: return "Neutral"
+                
+            df['Sentiment_Label'] = df['Compound_Score'].apply(get_sentiment_label)
+
+            # --- DASHBOARD VISUALIZATION ---
+            st.markdown("---")
+            st.markdown("### Executive Summary")
+            
+            # Top Metrics
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Reviews Analyzed", len(df))
+            
+            positive_pct = round((len(df[df['Sentiment_Label'] == 'Positive']) / len(df)) * 100, 1)
+            col2.metric("Positive Sentiment %", f"{positive_pct}%")
+            
+            avg_score = round(df['Compound_Score'].mean(), 2)
+            col3.metric("Average NLP Score", avg_score)
+
+            st.markdown("---")
+            
+            # Charts Section
+            col_chart1, col_chart2 = st.columns(2)
+            
+            with col_chart1:
+                st.markdown("#### Sentiment Distribution")
+                fig_pie = px.pie(
+                    df, 
+                    names='Sentiment_Label', 
+                    color='Sentiment_Label',
+                    color_discrete_map={"Positive": "#00CC96", "Negative": "#EF553B", "Neutral": "#636EFA"},
+                    hole=0.4
+                )
+                st.plotly_chart(fig_pie, use_container_width=True)
+                
+            with col_chart2:
+                st.markdown("#### Detailed NLP Output")
+                
+                # Smart Table Display based on User Selection
+                display_cols = [review_col, 'Sentiment_Label', 'Compound_Score']
+                if rating_col != "No Rating Column":
+                    display_cols.insert(1, rating_col)
+                    
+                st.dataframe(
+                    df[display_cols],
+                    use_container_width=True,
+                    height=350
+                )
 
     else:
-        st.error("Error: Your CSV file must contain a column named exactly 'Review_Text'.")
+        st.info("No file uploaded. Please upload a CSV to begin.")
 
 # =========================================================
 # TAB 2: SUPPORT TICKET AUTO-ROUTER
