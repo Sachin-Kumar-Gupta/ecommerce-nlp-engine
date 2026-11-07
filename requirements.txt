@@ -3,3 +3,6 @@ pandas
 plotly
 nltk
 matplotlib
+wordcloud
+transformers
+torch
