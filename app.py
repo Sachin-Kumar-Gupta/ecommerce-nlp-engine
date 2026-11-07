@@ -59,7 +59,11 @@ if app_mode == "1. Deep Learning Sentiment Analyzer":
             with st.spinner("🧠 AI is reading and understanding the context of the reviews... Please wait."):
                 
                 # HUGGING FACE AI PIPELINE
-                sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+                @st.cache_resource
+                def load_ai_model():
+                    return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+                
+                sentiment_pipeline = load_ai_model()
                 
                 def get_hf_sentiment(text):
                     try:
